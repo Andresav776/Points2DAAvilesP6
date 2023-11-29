@@ -7,17 +7,20 @@ public class PlayerControl : MonoBehaviour
     public float speed = 10.0f;
     public float rotationSpeed = 100.0f;
 
-    public GameObject enemy1;
-    public GameObject enemy2;
+    public GameObject target;
+    public Transform target0;
+    public float accuracy = 6;
+
+    bool autoPilot = false;
 
     // Start is called before the first frame update
     void Start()
     {
-        
+
     }
 
     // Update is called once per frame
-    void Update()
+    void LateUpdate()
     {
         float translation = Input.GetAxis("Vertical") * speed;
         float rotation = Input.GetAxis("Horizontal") * rotationSpeed;
@@ -29,47 +32,62 @@ public class PlayerControl : MonoBehaviour
 
         transform.Rotate(0, 0, -rotation);
 
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKey(KeyCode.Space))
         {
-            CalculateDistance1();
-            CalculateDistance2();
-            CalculateAngle1();
-            CalculateAngle2();
+            CalculateDistance();
+            CalculateAngle();
+        }
+
+        else if (Input.GetKeyDown(KeyCode.E))
+        {
+            autoPilot = !autoPilot;
+        }
+
+        else if (autoPilot)
+        {
+            AutoPilot();
         }
     }
 
-    void CalculateDistance1()
+    void CalculateDistance()
     {
-        Vector3 playerPosition = this.transform.position;
-        Vector3 enemy1Position = enemy1.transform.position;
+        Vector3 pP = this.transform.position;
+        Vector3 tP = target.transform.position;
 
-        float distance = Vector3.Distance(playerPosition, enemy1Position);
-        Debug.Log("Distance from Square: " + distance);
+        float distance = Vector3.Distance(pP, tP);
+        Debug.Log("Distance from Target: " + distance);
     }
 
-    void CalculateDistance2()
+    void CalculateAngle()
     {
-        Vector3 playerPosition = this.transform.position;
-        Vector3 enemy2Position = enemy2.transform.position;
+        Vector3 pO = this.transform.up;
+        Vector3 tO = target.transform.position - this.transform.position;
 
-        float distance = Vector3.Distance(playerPosition, enemy2Position);
-        Debug.Log("Distance from Circle: " + distance);
+        float dot = pO.x * tO.x + pO.y + tO.y;
+        float angle = Vector3.SignedAngle(pO, tO, this.transform.forward);
+
+        Debug.Log("Angle: " + Vector3.Angle(pO, tO));
+
+        Debug.DrawRay(this.transform.position, pO * 10, Color.blue, 2);
+        Debug.DrawRay(this.transform.position, tO, Color.red, 2);
+
+        this.transform.Rotate(0, 0, angle);
     }
 
-    void CalculateAngle1()
+    Vector3 Cross(Vector3 v, Vector3 w)
     {
-        Vector3 playerOrientation = this.transform.up;
-        Vector3 enemy1Orientation = enemy1.transform.position - this.transform.position;
+        float xMult = v.y * w.z - v.z * w.y;
+        float yMult = v.z * w.x - v.x * w.z;
+        float zMult = v.x * w.y - v.y * w.x;
 
-        Debug.DrawRay(this.transform.position, playerOrientation, Color.blue, 2);
-        Debug.DrawRay(this.transform.position, enemy1Orientation, Color.red, 2);
+        Vector3 crossProduct = new Vector3(xMult, yMult, zMult);
+        return crossProduct;
     }
 
-    void CalculateAngle2()
+    void AutoPilot()
     {
-        Vector3 playerOrientation = this.transform.up;
-        Vector3 enemy2Orientation = enemy2.transform.position - this.transform.position;
-
-        Debug.DrawRay(this.transform.position, enemy2Orientation, Color.red, 2);
+        CalculateAngle();
+        Vector3 direction = target0.position - this.transform.position;
+        this.transform.Translate(direction.normalized * speed * Time.deltaTime, Space.World);
     }
 }
